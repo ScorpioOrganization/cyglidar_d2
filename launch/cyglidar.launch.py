@@ -57,13 +57,21 @@ def generate_launch_description():
         "clahe_tiles_grid_size", default_value = TextSubstitution(text="8"),
         description = "Tiles Grid Size from 1 to 15")
 
+    serial_output_topic_arg = DeclareLaunchArgument(
+        "serial_output_topic", default_value = TextSubstitution(text="/can_driver/can_board/manipulator_gripper/set_cyglidar_uart_payload"),
+        description = "topic name for serial output (UInt8MultiArray)")
+
+    serial_output_via_topic_arg = DeclareLaunchArgument(
+        "serial_output_via_topic", default_value = TextSubstitution(text="True"),
+        description = "if true, serial is published to topic; if false, uses UART")
+
 
     lidar_node = launch_ros.actions.Node(
         package = 'cyglidar_d2_ros2',
         executable = 'cyglidar_d2_publisher',
         output = 'screen',
         parameters=[
-           {"port_number": "/dev/ttyUSB0"},
+           {"port_number": "/dev/pts/1"},
            {"baud_rate": LaunchConfiguration("baud_rate")},
            {"frame_id": "laser_frame"},
            {"fixed_frame": "/map"},
@@ -78,7 +86,9 @@ def generate_launch_description():
            {"enable_kalmanfilter": LaunchConfiguration("enable_kalmanfilter")},
            {"enable_clahe": LaunchConfiguration("enable_clahe")},
            {"clahe_cliplimit": LaunchConfiguration("clahe_cliplimit")},
-           {"clahe_tiles_grid_size": LaunchConfiguration("clahe_tiles_grid_size")}
+           {"clahe_tiles_grid_size": LaunchConfiguration("clahe_tiles_grid_size")},
+           {"serial_output_topic": LaunchConfiguration("serial_output_topic")},
+           {"serial_output_via_topic": LaunchConfiguration("serial_output_via_topic")}
         ]
     )
 
@@ -102,6 +112,8 @@ def generate_launch_description():
     ld.add_action(enable_clahe_arg)
     ld.add_action(clahe_cliplimit_arg)
     ld.add_action(clahe_tiles_grid_size_arg)
+    ld.add_action(serial_output_topic_arg)
+    ld.add_action(serial_output_via_topic_arg)
     ld.add_action(lidar_node)
     ld.add_action(tf_node)
 

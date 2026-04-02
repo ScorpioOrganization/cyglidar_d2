@@ -1,4 +1,7 @@
 #include "serial_uart.h"
+#include <rclcpp/rclcpp.hpp>
+#include <iomanip>
+#include <sstream>
 
 SerialUart::SerialUart() {}
 
@@ -227,6 +230,14 @@ uint32_t SerialUart::getBaudRate(uint8_t baud_rate_mode)
     return result;
 }
 
+void SerialUart::cancelRead()
+{
+    if (_serial_port && _serial_port->is_open())
+    {
+        _serial_port->cancel();
+    }
+}
+
 void SerialUart::closeSerialPort()
 {
     _payload_buffer.clear();
@@ -234,6 +245,27 @@ void SerialUart::closeSerialPort()
     _payload_buffer.push_back(D2_Const::COMMAND_DATA);
 
     transferPacketCommand(_payload_buffer);
+}
+
+void SerialUart::setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, const std::string& topic_name)
+{
+    _output_publisher = publisher;
+    _output_topic_name = topic_name;
+
+    if (!_output_topic_name.empty())
+    {
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", _output_topic_name.c_str());
+    }
+    else
+    {
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] publisher set (topic name unknown)");
+    }
+}
+
+void SerialUart::setUseTopicOutput(bool enable)
+{
+    _use_topic_output = enable;
+    RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL MODE] topic output %s", enable ? "enabled" : "disabled");
 }
 
 void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
@@ -261,5 +293,20 @@ void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
 
     _command_buffer.push_back(check_sum);
 
-    _serial_port->write_some(boost::asio::buffer(_command_buffer, _command_buffer.size()), _error_code);
+    if (_use_topic_output && _output_publisher)
+    {
+        std_msgs::msg::UInt8MultiArray msg;
+        msg.data.reserve(_command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0);
+
+        for (size_t i = 3; i < _command_buffer.size(); i++)
+        {
+            msg.data.push_back(_command_buffer[i]);
+        }
+
+        _output_publisher->publish(msg);
+    }
+    else if (_serial_port && _serial_port->is_open())
+    {
+        _serial_port->write_some(boost::asio::buffer(_command_buffer, _command_buffer.size()), _error_code);
+    }
 }

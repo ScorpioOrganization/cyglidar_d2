@@ -23,6 +23,7 @@ class D2Node : public rclcpp::Node
         void connectBoostSerial();
         void disconnectBoostSerial();
         void loopCygParser();
+        void cancelSerialRead();
 
     private:
         struct received_data_buffer
@@ -74,6 +75,8 @@ class D2Node : public rclcpp::Node
         std::future_status status;
 
         std::string mode_notice;
+        std::string serial_output_topic;
+        bool serial_output_via_topic;
 
         uint8_t packet_structure[D2_Const::SCAN_MAX_SIZE];
         uint8_t first_total_packet_data[D2_Const::SCAN_MAX_SIZE];
