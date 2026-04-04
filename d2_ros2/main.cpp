@@ -9,7 +9,7 @@ static D2Node* g_d2_node_ptr = nullptr;
 
 static void signal_handler(int /*signum*/)
 {
-    g_shutdown_requested = true;
+    g_shutdown_requested.store(true, std::memory_order_relaxed);
     if (g_d2_node_ptr)
         g_d2_node_ptr->cancelSerialRead();
 }
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     {
         d2_node->connectBoostSerial();
         rclcpp::Rate rate(1000);
-        while (!g_shutdown_requested)
+        while (!g_shutdown_requested.load(std::memory_order_relaxed))
         {
             d2_node->loopCygParser();
             rate.sleep();
