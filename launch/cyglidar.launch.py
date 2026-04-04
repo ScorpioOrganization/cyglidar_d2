@@ -73,7 +73,7 @@ def generate_launch_description():
         parameters=[
            {"port_number": "/dev/ttyTHS1"},
            {"baud_rate": LaunchConfiguration("baud_rate")},
-           {"frame_id": "laser_frame"},
+           {"frame_id": "cyglidar_frame"},
            {"fixed_frame": "/map"},
            {"run_mode": LaunchConfiguration("run_mode")},
            {"frequency_channel": LaunchConfiguration("frequency_channel")},
@@ -88,13 +88,13 @@ def generate_launch_description():
            {"clahe_cliplimit": LaunchConfiguration("clahe_cliplimit")},
            {"clahe_tiles_grid_size": LaunchConfiguration("clahe_tiles_grid_size")},
            {"serial_output_topic": LaunchConfiguration("serial_output_topic")},
-           {"serial_output_via_topic": LaunchConfiguration("serial_output_via_topic")}
+           {"serial_output_via_topic": LaunchConfiguration("serial_output_via_topic")},
         ]
     )
 
     tf_node = launch_ros.actions.Node(
-        package = 'tf2_ros', executable = "static_transform_publisher", name="to_laserframe",
-        arguments = ["0", "0", "0", "0", "0", "0", "map", "laser_frame"]
+        package = 'tf2_ros', executable = "static_transform_publisher", name="to_cyglidar_frame",
+        arguments = ["--x", "0", "--y", "0", "--z", "0", "--yaw", "0", "--pitch", "0", "--roll", "0", "--frame-id", "map", "--child-frame-id", "cyglidar_frame"]
     )
 
     ld = LaunchDescription()
