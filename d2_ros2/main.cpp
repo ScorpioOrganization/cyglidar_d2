@@ -5,13 +5,10 @@
 #include <atomic>
 
 static std::atomic<bool> g_shutdown_requested{false};
-static D2Node* g_d2_node_ptr = nullptr;
 
 static void signal_handler(int /*signum*/)
 {
     g_shutdown_requested.store(true, std::memory_order_relaxed);
-    if (g_d2_node_ptr)
-        g_d2_node_ptr->cancelSerialRead();
 }
 
 int main(int argc, char **argv)
@@ -22,7 +19,6 @@ int main(int argc, char **argv)
     rclcpp::init(argc, argv);
 
     std::shared_ptr<D2Node> d2_node = std::make_shared<D2Node>();
-    g_d2_node_ptr = d2_node.get();
 
     // Override rclcpp's SIGINT handler with ours (must be after rclcpp::init)
     signal(SIGINT,  signal_handler);
@@ -39,6 +35,7 @@ int main(int argc, char **argv)
         }
 
         // rclcpp context is still valid here — publish the close frame
+        d2_node->cancelSerialRead();
         d2_node->disconnectBoostSerial();
 
         // Give DDS time to deliver the close command before shutdown
@@ -49,6 +46,5 @@ int main(int argc, char **argv)
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "[D2 NODE ERROR] : %s", e.what());
     }
 
-    g_d2_node_ptr = nullptr;
     rclcpp::shutdown();
 }
