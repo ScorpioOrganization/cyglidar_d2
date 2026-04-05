@@ -4,7 +4,6 @@ from launch.substitutions import TextSubstitution, LaunchConfiguration
 import launch_ros.actions
 
 def generate_launch_description():
-
     port_number_arg = DeclareLaunchArgument(
         "port_number", default_value = TextSubstitution(text="/dev/ttyTHS1"),
         description = "serial port device path")
