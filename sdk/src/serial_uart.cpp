@@ -1,5 +1,6 @@
 #include "serial_uart.h"
 #include <rclcpp/rclcpp.hpp>
+#include <cstring>
 
 SerialUart::SerialUart() {}
 
@@ -294,12 +295,9 @@ void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
     if (_use_topic_output && _output_publisher)
     {
         std_msgs::msg::UInt8MultiArray msg;
-        msg.data.reserve(_command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0);
-
-        for (size_t i = 3; i < _command_buffer.size(); i++)
-        {
-            msg.data.push_back(_command_buffer[i]);
-        }
+        const size_t payload_size = _command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0;
+        msg.data.resize(payload_size);
+        std::memcpy(msg.data.data(), _command_buffer.data() + 3, payload_size);
 
         _output_publisher->publish(msg);
     }
