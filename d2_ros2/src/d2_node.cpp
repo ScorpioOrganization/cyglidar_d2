@@ -112,22 +112,22 @@ void D2Node::loopCygParser()
 
 void D2Node::initConfiguration()
 {
-    port_number              = this->declare_parameter("port_number",           "/dev/ttyUSB0");
-    baud_rate_mode           = this->declare_parameter("baud_rate",             0);
-    frame_id                 = this->declare_parameter("frame_id",              "laser_frame");
-    run_mode                 = this->declare_parameter("run_mode",              ROS_Const::MODE_DUAL);
-    data_type_3d             = this->declare_parameter("data_type_3d",          ROS_Const::MODE_DISTANCE);
-    duration_mode            = this->declare_parameter("duration_mode",         ROS_Const::PULSE_AUTO);
-    duration_value           = this->declare_parameter("duration_value",        10000);
-    frequency_channel        = this->declare_parameter("frequency_channel",     0);
-    color_mode               = this->declare_parameter("color_mode",            ROS_Const::MODE_HUE);
-    filter_mode              = this->declare_parameter("filter_mode",           ROS_Const::NONE_FILTER);
-    edge_filter_value        = this->declare_parameter("edge_filter_value",     0);
-    enable_kalmanfilter      = this->declare_parameter("enable_kalmanfilter",   false);
-    enable_clahe             = this->declare_parameter("enable_clahe",          false);
-    clahe_cliplimit          = this->declare_parameter("clahe_cliplimit",       40);
-    clahe_tiles_grid_size    = this->declare_parameter("clahe_tiles_grid_size", 8);
-    serial_output_topic      = this->declare_parameter("serial_output_topic", "serial_output");
+    port_number              = this->declare_parameter("port_number",             "/dev/ttyUSB0");
+    baud_rate_mode           = this->declare_parameter("baud_rate",               0);
+    frame_id                 = this->declare_parameter("frame_id",                "laser_frame");
+    run_mode                 = this->declare_parameter("run_mode",                ROS_Const::MODE_DUAL);
+    data_type_3d             = this->declare_parameter("data_type_3d",            ROS_Const::MODE_DISTANCE);
+    duration_mode            = this->declare_parameter("duration_mode",           ROS_Const::PULSE_AUTO);
+    duration_value           = this->declare_parameter("duration_value",          10000);
+    frequency_channel        = this->declare_parameter("frequency_channel",       0);
+    color_mode               = this->declare_parameter("color_mode",              ROS_Const::MODE_HUE);
+    filter_mode              = this->declare_parameter("filter_mode",             ROS_Const::NONE_FILTER);
+    edge_filter_value        = this->declare_parameter("edge_filter_value",       0);
+    enable_kalmanfilter      = this->declare_parameter("enable_kalmanfilter",     false);
+    enable_clahe             = this->declare_parameter("enable_clahe",            false);
+    clahe_cliplimit          = this->declare_parameter("clahe_cliplimit",         40);
+    clahe_tiles_grid_size    = this->declare_parameter("clahe_tiles_grid_size",   8);
+    serial_output_topic      = this->declare_parameter("serial_output_topic",     "serial_output");
     serial_output_via_topic  = this->declare_parameter("serial_output_via_topic", true);
 
     status_topic->assignDeviceStatus();

@@ -5,6 +5,10 @@ import launch_ros.actions
 
 def generate_launch_description():
 
+    port_number_arg = DeclareLaunchArgument(
+        "port_number", default_value = TextSubstitution(text="/dev/ttyTHS1"),
+        description = "serial port device path")
+
     baud_rate_arg = DeclareLaunchArgument(
         "baud_rate", default_value = TextSubstitution(text="0"),
         description = "baud rate value [0:(3,000,000), 1:(921,600), 2:(115,200), 3:(57,600)]")
@@ -71,7 +75,7 @@ def generate_launch_description():
         executable = 'cyglidar_d2_publisher',
         output = 'screen',
         parameters=[
-           {"port_number": "/dev/ttyTHS1"},
+           {"port_number": LaunchConfiguration("port_number")},
            {"baud_rate": LaunchConfiguration("baud_rate")},
            {"frame_id": "cyglidar_frame"},
            {"fixed_frame": "/map"},
@@ -99,6 +103,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(port_number_arg)
     ld.add_action(baud_rate_arg)
     ld.add_action(run_mode_arg)
     ld.add_action(frequency_channel_arg)
