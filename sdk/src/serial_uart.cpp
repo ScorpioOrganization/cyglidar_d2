@@ -246,25 +246,19 @@ void SerialUart::closeSerialPort()
     transferPacketCommand(_payload_buffer);
 }
 
-void SerialUart::setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, const std::string& topic_name)
+void SerialUart::setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, std::optional<std::string> topic_name)
 {
     _output_publisher = publisher;
-    _output_topic_name = topic_name;
+    _output_topic = topic_name;
 
-    if (!_output_topic_name.empty())
+    if (_output_topic.has_value())
     {
-        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", _output_topic_name.c_str());
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", _output_topic.value().c_str());
     }
     else
     {
-        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] publisher set (topic name unknown)");
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL MODE] topic output disabled, using UART");
     }
-}
-
-void SerialUart::setUseTopicOutput(bool enable)
-{
-    _use_topic_output = enable;
-    RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL MODE] topic output %s", enable ? "enabled" : "disabled");
 }
 
 void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
@@ -292,7 +286,7 @@ void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
 
     _command_buffer.push_back(check_sum);
 
-    if (_use_topic_output && _output_publisher)
+    if (_output_topic.has_value() && _output_publisher)
     {
         std_msgs::msg::UInt8MultiArray msg;
         const size_t payload_size = _command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0;

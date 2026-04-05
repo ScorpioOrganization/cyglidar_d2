@@ -27,10 +27,17 @@ D2Node::D2Node() : Node("D2_NODE")
 
     status_topic->initPublisher(this->create_publisher<std_msgs::msg::Float32>("sensor_temperature", 5));
 
-    auto serial_out_publisher = this->create_publisher<std_msgs::msg::UInt8MultiArray>(serial_output_topic, rclcpp::QoS(10).transient_local());
-    serial_uart->setOutputPublisher(serial_out_publisher, serial_output_topic);
-    serial_uart->setUseTopicOutput(serial_output_via_topic);
-    RCLCPP_INFO(this->get_logger(), "[D2_NODE] serial_output_topic=%s via_topic=%s", serial_output_topic.c_str(), serial_output_via_topic ? "true" : "false");
+    if (serial_output_topic.has_value())
+    {
+        auto serial_out_publisher = this->create_publisher<std_msgs::msg::UInt8MultiArray>(serial_output_topic.value(), rclcpp::QoS(10).transient_local());
+        serial_uart->setOutputPublisher(serial_out_publisher, serial_output_topic);
+    }
+    else
+    {
+        serial_uart->setOutputPublisher(nullptr, std::nullopt);
+    }
+    RCLCPP_INFO(this->get_logger(), "[D2_NODE] serial_output: %s",
+        serial_output_topic.has_value() ? serial_output_topic.value().c_str() : "UART (no topic)");
 
     future = exit_signal.get_future();
 
@@ -112,7 +119,7 @@ void D2Node::loopCygParser()
 
 void D2Node::initConfiguration()
 {
-    port_number              = this->declare_parameter("port_number",             "/dev/ttyUSB0");
+    port_number              = this->declare_parameter("port_number",             "/dev/ttyTHS1");
     baud_rate_mode           = this->declare_parameter("baud_rate",               0);
     frame_id                 = this->declare_parameter("frame_id",                "laser_frame");
     run_mode                 = this->declare_parameter("run_mode",                ROS_Const::MODE_DUAL);
@@ -127,8 +134,10 @@ void D2Node::initConfiguration()
     enable_clahe             = this->declare_parameter("enable_clahe",            false);
     clahe_cliplimit          = this->declare_parameter("clahe_cliplimit",         40);
     clahe_tiles_grid_size    = this->declare_parameter("clahe_tiles_grid_size",   8);
-    serial_output_topic      = this->declare_parameter("serial_output_topic",     "serial_output");
-    serial_output_via_topic  = this->declare_parameter("serial_output_via_topic", true);
+    std::string topic_name   = this->declare_parameter("serial_output_topic",     "serial_output");
+    bool via_topic           = this->declare_parameter("serial_output_via_topic", true);
+
+    serial_output_topic = via_topic ? std::make_optional(topic_name) : std::nullopt;
 
     status_topic->assignDeviceStatus();
     topic_2d->assignLaserScan(frame_id);

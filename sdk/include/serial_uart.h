@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/asio.hpp>
+#include <optional>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -20,8 +21,7 @@ class SerialUart
 
         uint16_t getPacketLength(uint8_t* received_buffer);
 
-        void setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, const std::string& topic_name = "");
-        void setUseTopicOutput(bool enable);
+        void setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, std::optional<std::string> topic_name);
 
         void requestRunMode(const uint8_t run_mode, std::string& notice);
         void requestSwitch3DType(const uint8_t mode_3d, std::string& notice);
@@ -47,6 +47,5 @@ class SerialUart
         std::vector<uint8_t> _payload_buffer;
 
         rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr _output_publisher;
-        std::string _output_topic_name;
-        bool _use_topic_output = false;
+        std::optional<std::string> _output_topic;
 };

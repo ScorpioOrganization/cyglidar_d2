@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 
 #include "cygbot_constant.h"
@@ -75,8 +76,7 @@ class D2Node : public rclcpp::Node
         std::future_status status;
 
         std::string mode_notice;
-        std::string serial_output_topic;
-        bool serial_output_via_topic;
+        std::optional<std::string> serial_output_topic;
 
         uint8_t packet_structure[D2_Const::SCAN_MAX_SIZE];
         uint8_t first_total_packet_data[D2_Const::SCAN_MAX_SIZE];
