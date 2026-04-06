@@ -253,7 +253,7 @@ void SerialUart::setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiA
 
     if (_output_topic.has_value())
     {
-        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", _output_topic.value().c_str());
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", (*_output_topic).c_str());
     }
     else
     {

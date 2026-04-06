@@ -137,7 +137,7 @@ void D2Node::initConfiguration()
     std::string topic_name   = this->declare_parameter("serial_output_topic",     "serial_output");
     bool via_topic           = this->declare_parameter("serial_output_via_topic", true);
 
-    serial_output_topic = via_topic ? std::make_optional(topic_name) : std::nullopt;
+    serial_output_topic = via_topic ? std::make_optional(std::move(topic_name)) : std::nullopt;
 
     status_topic->assignDeviceStatus();
     topic_2d->assignLaserScan(frame_id);
