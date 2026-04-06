@@ -34,6 +34,7 @@ void SerialUart::openSerialPort(const std::string& port, const uint8_t baudrate)
 				  << "\", " << _error_code.message().c_str() << std::endl;
 	}
 
+    _baud_rate_mode = baudrate;
     uint32_t baud_rate = getBaudRate(baudrate);
 
 	_serial_port->set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
@@ -290,8 +291,9 @@ void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
     {
         std_msgs::msg::UInt8MultiArray msg;
         const size_t payload_size = _command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0;
-        msg.data.resize(payload_size);
-        std::memcpy(msg.data.data(), _command_buffer.data() + 3, payload_size);
+        msg.data.resize(payload_size + 1);  // +1 for baud rate mode byte
+        msg.data[0] = _baud_rate_mode;
+        std::memcpy(msg.data.data() + 1, _command_buffer.data() + 3, payload_size);
 
         _output_publisher->publish(msg);
     }

@@ -48,4 +48,5 @@ class SerialUart
 
         rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr _output_publisher;
         std::optional<std::string> _output_topic;
+        uint8_t _baud_rate_mode = 0;
 };
