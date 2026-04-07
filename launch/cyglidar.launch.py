@@ -76,7 +76,7 @@ def generate_launch_description():
         parameters=[
            {"port_number": LaunchConfiguration("port_number")},
            {"baud_rate": LaunchConfiguration("baud_rate")},
-           {"frame_id": "cyglidar_frame"},
+           {"frame_id": "cyglidar_link"},
            {"fixed_frame": "/map"},
            {"run_mode": LaunchConfiguration("run_mode")},
            {"frequency_channel": LaunchConfiguration("frequency_channel")},
@@ -93,11 +93,6 @@ def generate_launch_description():
            {"serial_output_topic": LaunchConfiguration("serial_output_topic")},
            {"serial_output_via_topic": LaunchConfiguration("serial_output_via_topic")},
         ]
-    )
-
-    tf_node = launch_ros.actions.Node(
-        package = 'tf2_ros', executable = "static_transform_publisher", name="to_cyglidar_frame",
-        arguments = ["--x", "0", "--y", "0", "--z", "0", "--yaw", "0", "--pitch", "0", "--roll", "0", "--frame-id", "map", "--child-frame-id", "cyglidar_frame"]
     )
 
     ld = LaunchDescription()
@@ -119,6 +114,5 @@ def generate_launch_description():
     ld.add_action(serial_output_topic_arg)
     ld.add_action(serial_output_via_topic_arg)
     ld.add_action(lidar_node)
-    ld.add_action(tf_node)
 
     return ld
