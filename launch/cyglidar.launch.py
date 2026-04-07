@@ -4,6 +4,9 @@ from launch.substitutions import TextSubstitution, LaunchConfiguration
 import launch_ros.actions
 
 def generate_launch_description():
+    port_number_arg = DeclareLaunchArgument(
+        "port_number", default_value = TextSubstitution(text="/dev/ttyTHS1"),
+        description = "serial port device path")
 
     baud_rate_arg = DeclareLaunchArgument(
         "baud_rate", default_value = TextSubstitution(text="0"),
@@ -57,15 +60,23 @@ def generate_launch_description():
         "clahe_tiles_grid_size", default_value = TextSubstitution(text="8"),
         description = "Tiles Grid Size from 1 to 15")
 
+    serial_output_topic_arg = DeclareLaunchArgument(
+        "serial_output_topic", default_value = TextSubstitution(text="/can_driver/can_board/manipulator_gripper/set_cyglidar_uart_payload"),
+        description = "topic name for serial output (UInt8MultiArray)")
+
+    serial_output_via_topic_arg = DeclareLaunchArgument(
+        "serial_output_via_topic", default_value = TextSubstitution(text="True"),
+        description = "if true, serial is published to topic; if false, uses UART")
+
 
     lidar_node = launch_ros.actions.Node(
         package = 'cyglidar_d2_ros2',
         executable = 'cyglidar_d2_publisher',
         output = 'screen',
         parameters=[
-           {"port_number": "/dev/ttyUSB0"},
+           {"port_number": LaunchConfiguration("port_number")},
            {"baud_rate": LaunchConfiguration("baud_rate")},
-           {"frame_id": "laser_frame"},
+           {"frame_id": "cyglidar_link"},
            {"fixed_frame": "/map"},
            {"run_mode": LaunchConfiguration("run_mode")},
            {"frequency_channel": LaunchConfiguration("frequency_channel")},
@@ -78,17 +89,15 @@ def generate_launch_description():
            {"enable_kalmanfilter": LaunchConfiguration("enable_kalmanfilter")},
            {"enable_clahe": LaunchConfiguration("enable_clahe")},
            {"clahe_cliplimit": LaunchConfiguration("clahe_cliplimit")},
-           {"clahe_tiles_grid_size": LaunchConfiguration("clahe_tiles_grid_size")}
+           {"clahe_tiles_grid_size": LaunchConfiguration("clahe_tiles_grid_size")},
+           {"serial_output_topic": LaunchConfiguration("serial_output_topic")},
+           {"serial_output_via_topic": LaunchConfiguration("serial_output_via_topic")},
         ]
-    )
-
-    tf_node = launch_ros.actions.Node(
-        package = 'tf2_ros', executable = "static_transform_publisher", name="to_laserframe",
-        arguments = ["0", "0", "0", "0", "0", "0", "map", "laser_frame"]
     )
 
     ld = LaunchDescription()
 
+    ld.add_action(port_number_arg)
     ld.add_action(baud_rate_arg)
     ld.add_action(run_mode_arg)
     ld.add_action(frequency_channel_arg)
@@ -102,7 +111,8 @@ def generate_launch_description():
     ld.add_action(enable_clahe_arg)
     ld.add_action(clahe_cliplimit_arg)
     ld.add_action(clahe_tiles_grid_size_arg)
+    ld.add_action(serial_output_topic_arg)
+    ld.add_action(serial_output_via_topic_arg)
     ld.add_action(lidar_node)
-    ld.add_action(tf_node)
 
     return ld

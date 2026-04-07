@@ -1,4 +1,6 @@
 #include "serial_uart.h"
+#include <rclcpp/rclcpp.hpp>
+#include <cstring>
 
 SerialUart::SerialUart() {}
 
@@ -32,6 +34,7 @@ void SerialUart::openSerialPort(const std::string& port, const uint8_t baudrate)
 				  << "\", " << _error_code.message().c_str() << std::endl;
 	}
 
+    _baud_rate_mode = baudrate;
     uint32_t baud_rate = getBaudRate(baudrate);
 
 	_serial_port->set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
@@ -227,6 +230,14 @@ uint32_t SerialUart::getBaudRate(uint8_t baud_rate_mode)
     return result;
 }
 
+void SerialUart::cancelRead()
+{
+    if (_serial_port && _serial_port->is_open())
+    {
+        _serial_port->cancel();
+    }
+}
+
 void SerialUart::closeSerialPort()
 {
     _payload_buffer.clear();
@@ -234,6 +245,21 @@ void SerialUart::closeSerialPort()
     _payload_buffer.push_back(D2_Const::COMMAND_DATA);
 
     transferPacketCommand(_payload_buffer);
+}
+
+void SerialUart::setOutputPublisher(rclcpp::Publisher<std_msgs::msg::UInt8MultiArray>::SharedPtr publisher, std::optional<std::string> topic_name)
+{
+    _output_publisher = publisher;
+    _output_topic = topic_name;
+
+    if (_output_topic.has_value())
+    {
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL OUTPUT] topic set to '%s'", (*_output_topic).c_str());
+    }
+    else
+    {
+        RCLCPP_INFO(rclcpp::get_logger("SerialUart"), "[SERIAL MODE] topic output disabled, using UART");
+    }
 }
 
 void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
@@ -261,5 +287,18 @@ void SerialUart::transferPacketCommand(const std::vector<uint8_t>& payload)
 
     _command_buffer.push_back(check_sum);
 
-    _serial_port->write_some(boost::asio::buffer(_command_buffer, _command_buffer.size()), _error_code);
+    if (_output_topic.has_value() && _output_publisher)
+    {
+        std_msgs::msg::UInt8MultiArray msg;
+        const size_t payload_size = _command_buffer.size() > 3 ? _command_buffer.size() - 3 : 0;
+        msg.data.resize(payload_size + 1);  // +1 for baud rate mode byte
+        msg.data[0] = _baud_rate_mode;
+        std::memcpy(msg.data.data() + 1, _command_buffer.data() + 3, payload_size);
+
+        _output_publisher->publish(msg);
+    }
+    else if (_serial_port && _serial_port->is_open())
+    {
+        _serial_port->write_some(boost::asio::buffer(_command_buffer, _command_buffer.size()), _error_code);
+    }
 }

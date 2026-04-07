@@ -1,4 +1,5 @@
 #include "d2_node.h"
+#include <std_msgs/msg/u_int8_multi_array.hpp>
 
 
 D2Node::D2Node() : Node("D2_NODE")
@@ -9,6 +10,11 @@ D2Node::D2Node() : Node("D2_NODE")
     distance_processor = new DistanceProcessor();
     cygbot_parser      = new CygbotParser();
     serial_uart        = new SerialUart();
+
+    received_buffer[0].packet_data = first_total_packet_data;
+    received_buffer[1].packet_data = second_total_packet_data;
+
+    initConfiguration();
 
     auto qos_2d = rclcpp::QoS(rclcpp::KeepLast(20)).reliable();
     auto qos_3d = rclcpp::QoS(rclcpp::KeepLast(20)).best_effort();
@@ -21,10 +27,17 @@ D2Node::D2Node() : Node("D2_NODE")
 
     status_topic->initPublisher(this->create_publisher<std_msgs::msg::Float32>("sensor_temperature", 5));
 
-    received_buffer[0].packet_data = first_total_packet_data;
-    received_buffer[1].packet_data = second_total_packet_data;
-
-    initConfiguration();
+    if (serial_output_topic.has_value())
+    {
+        auto serial_out_publisher = this->create_publisher<std_msgs::msg::UInt8MultiArray>(serial_output_topic.value(), rclcpp::QoS(10).transient_local());
+        serial_uart->setOutputPublisher(serial_out_publisher, serial_output_topic);
+    }
+    else
+    {
+        serial_uart->setOutputPublisher(nullptr, std::nullopt);
+    }
+    RCLCPP_INFO(this->get_logger(), "[D2_NODE] serial_output: %s",
+        serial_output_topic.has_value() ? serial_output_topic.value().c_str() : "UART (no topic)");
 
     future = exit_signal.get_future();
 
@@ -74,6 +87,11 @@ void D2Node::disconnectBoostSerial()
     RCLCPP_INFO(this->get_logger(), "[PACKET REQUEST] STOP");
 }
 
+void D2Node::cancelSerialRead()
+{
+    serial_uart->cancelRead();
+}
+
 void D2Node::loopCygParser()
 {
     uint16_t number_of_data = serial_uart->getPacketLength(packet_structure);
@@ -101,21 +119,25 @@ void D2Node::loopCygParser()
 
 void D2Node::initConfiguration()
 {
-    port_number           = this->declare_parameter("port_number",           "/dev/ttyUSB0");
-    baud_rate_mode        = this->declare_parameter("baud_rate",             0);
-    frame_id              = this->declare_parameter("frame_id",              "laser_frame");
-    run_mode              = this->declare_parameter("run_mode",              ROS_Const::MODE_DUAL);
-    data_type_3d          = this->declare_parameter("data_type_3d",          ROS_Const::MODE_DISTANCE);
-    duration_mode         = this->declare_parameter("duration_mode",         ROS_Const::PULSE_AUTO);
-    duration_value        = this->declare_parameter("duration_value",        10000);
-    frequency_channel     = this->declare_parameter("frequency_channel",     0);
-    color_mode            = this->declare_parameter("color_mode",            ROS_Const::MODE_HUE);
-    filter_mode           = this->declare_parameter("filter_mode",           ROS_Const::NONE_FILTER);
-    edge_filter_value     = this->declare_parameter("edge_filter_value",     0);
-    enable_kalmanfilter   = this->declare_parameter("enable_kalmanfilter",   false);
-    enable_clahe          = this->declare_parameter("enable_clahe",          false);
-    clahe_cliplimit       = this->declare_parameter("clahe_cliplimit",       40);
-    clahe_tiles_grid_size = this->declare_parameter("clahe_tiles_grid_size", 8);
+    port_number              = this->declare_parameter("port_number",             "/dev/ttyTHS1");
+    baud_rate_mode           = this->declare_parameter("baud_rate",               0);
+    frame_id                 = this->declare_parameter("frame_id",                "laser_frame");
+    run_mode                 = this->declare_parameter("run_mode",                ROS_Const::MODE_DUAL);
+    data_type_3d             = this->declare_parameter("data_type_3d",            ROS_Const::MODE_DISTANCE);
+    duration_mode            = this->declare_parameter("duration_mode",           ROS_Const::PULSE_AUTO);
+    duration_value           = this->declare_parameter("duration_value",          10000);
+    frequency_channel        = this->declare_parameter("frequency_channel",       0);
+    color_mode               = this->declare_parameter("color_mode",              ROS_Const::MODE_HUE);
+    filter_mode              = this->declare_parameter("filter_mode",             ROS_Const::NONE_FILTER);
+    edge_filter_value        = this->declare_parameter("edge_filter_value",       0);
+    enable_kalmanfilter      = this->declare_parameter("enable_kalmanfilter",     false);
+    enable_clahe             = this->declare_parameter("enable_clahe",            false);
+    clahe_cliplimit          = this->declare_parameter("clahe_cliplimit",         40);
+    clahe_tiles_grid_size    = this->declare_parameter("clahe_tiles_grid_size",   8);
+    std::string topic_name   = this->declare_parameter("serial_output_topic",     "serial_output");
+    bool via_topic           = this->declare_parameter("serial_output_via_topic", true);
+
+    serial_output_topic = via_topic ? std::make_optional(std::move(topic_name)) : std::nullopt;
 
     status_topic->assignDeviceStatus();
     topic_2d->assignLaserScan(frame_id);
@@ -164,7 +186,7 @@ void D2Node::requestPacketData()
 
     serial_uart->requestRunMode(run_mode, mode_notice);
     RCLCPP_INFO(this->get_logger(), "[PACKET REQUEST] %s", mode_notice.c_str());
-    
+
     serial_uart->requestFrequencyChannel(frequency_channel);
     RCLCPP_INFO(this->get_logger(), "[PACKET REQUEST] FREQUENCY CH.%d", frequency_channel);
 
